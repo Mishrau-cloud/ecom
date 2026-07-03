@@ -1,4 +1,3 @@
-import argparse
 import secrets
 import string
 
@@ -11,7 +10,22 @@ def generate_password(
     include_digits: bool = True,
     include_symbols: bool = True,
 ) -> str:
-    """Generate a random password using cryptographically secure randomness."""
+    """Generate a random password.
+
+    Args:
+        length: The number of characters in the password.
+        include_uppercase: Whether to allow uppercase letters.
+        include_lowercase: Whether to allow lowercase letters.
+        include_digits: Whether to allow digits.
+        include_symbols: Whether to allow symbols.
+
+    Returns:
+        A password containing at least one character from each enabled set.
+
+    Raises:
+        ValueError: If length is less than 1, if no character sets are enabled,
+            or if length is less than the number of enabled character sets.
+    """
     if length < 1:
         raise ValueError("length must be at least 1")
 
@@ -30,32 +44,17 @@ def generate_password(
     if length < len(char_sets):
         raise ValueError("length must be at least the number of enabled character sets")
 
-    password = [secrets.choice(charset) for charset in char_sets]
     pool = "".join(char_sets)
-    password.extend(secrets.choice(pool) for _ in range(length - len(char_sets)))
+    password = [None] * length
+    available_positions = list(range(length))
 
-    secrets.SystemRandom().shuffle(password)
+    for charset in char_sets:
+        position = secrets.choice(available_positions)
+        available_positions.remove(position)
+        password[position] = secrets.choice(charset)
+
+    for index, value in enumerate(password):
+        if value is None:
+            password[index] = secrets.choice(pool)
+
     return "".join(password)
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate a random password")
-    parser.add_argument("-l", "--length", type=int, default=12, help="Password length")
-    parser.add_argument("--no-uppercase", action="store_true", help="Exclude uppercase letters")
-    parser.add_argument("--no-lowercase", action="store_true", help="Exclude lowercase letters")
-    parser.add_argument("--no-digits", action="store_true", help="Exclude digits")
-    parser.add_argument("--no-symbols", action="store_true", help="Exclude symbols")
-    args = parser.parse_args()
-
-    password = generate_password(
-        length=args.length,
-        include_uppercase=not args.no_uppercase,
-        include_lowercase=not args.no_lowercase,
-        include_digits=not args.no_digits,
-        include_symbols=not args.no_symbols,
-    )
-    print(password)
-
-
-if __name__ == "__main__":
-    main()
